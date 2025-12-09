@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Gorilla Casino - Slot Machine</title>
+    <link rel="stylesheet" href="casino.css">
+</head>
+
+<body>
+    <div class="page-wrapper">
+        <div class="top-bar">
+            <a class="back-button" href="./home.html">
+                Back
+            </a>
+            <h1>Slot Machine</h1>
+        </div>
+
+        <div class="main-content">
+            <div class="slot-card">
+                <h1 class="slot-title">Gorilla Slots</h1>
+                <p class="slot-subtitle">
+                    3x3 Grid -- Winning line is the <strong>middle row</strong>.
+                </p>
+
+                <div class="balance-row">
+                    <div class="balance-label">Balance:</div>
+                    <div class="balance-value" id="balanceDisplay">1000</div>
+                </div>
+
+                <div class="reels-container">
+                    <div class="reels-grid">
+                        <div class="reel-row">
+                            <div class="reel" data-index="0">🍒</div>
+                            <div class="reel" data-index="1">🍋</div>
+                            <div class="reel" data-index="2">⭐</div>
+                        </div>
+                        <div class="reel-row">
+                            <div class="reel" data-index="3">🍒</div>
+                            <div class="reel" data-index="4">🍋</div>
+                            <div class="reel" data-index="5">⭐</div>
+                        </div>
+                        <div class="reel-row">
+                            <div class="reel" data-index="6">🍒</div>
+                            <div class="reel" data-index="7">🍋</div>
+                            <div class="reel" data-index="8">⭐</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <label for="betInput" class="bet-input-text">Bet:</label>
+                    <input type="number" id="betInput" class="bet-input" value="10" min="1">
+                    <button class="btn btn-spin" id="spinButton">SPIN</button>
+                    <button class="btn btn-add" id="addMoneyButton">+100</button>
+                </div>
+
+                <div class="message" id="message">
+                    Press SPIN to start. Only the middle row counts as the winning line.
+                </div>
+
+                <table class="payout-table">
+                    <tr>
+                        <th>Middle Row Symbols</th>
+                        <th>Payout</th>
+                    </tr>
+                    <tr>
+                        <td class="no-select">7️⃣ 7️⃣ 7️⃣</td>
+                        <td>100 x bet</td>
+                    </tr>
+                    <tr>
+                        <td class="no-select">⭐ ⭐ ⭐</td>
+                        <td>25 x bet</td>
+                    </tr>
+                    <tr>
+                        <td class="no-select">🔔 🔔 🔔</td>
+                        <td>10 x bet</td>
+                    </tr>
+                    <tr>
+                        <td class="no-select">🍒 🍒 🍒</td>
+                        <td>6 x bet</td>
+                    </tr>
+                    <tr>
+                        <td>Any other triple</td>
+                        <td>3 x bet</td>
+                    </tr>
+                    <tr>
+                        <td>Not all 3 match</td>
+                        <td>No win</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var balance = 1000;
+        var balanceDisplay = document.getElementById("balanceDisplay");
+
+        var betInput = document.getElementById("betInput");
+        var spinButton = document.getElementById("spinButton");
+        var addMoneyButton = document.getElementById("addMoneyButton");
+        var message = document.getElementById("message");
+
+        var reelCells = document.querySelectorAll(".reel");
+        var symbols = ["🍒", "🍋", "⭐", "🔔", "7️⃣"];
+
+        var isSpinning = false;
+
+        function updateBalance() {
+            balanceDisplay.textContent = balance;
+        }
+
+        function getRandomSymbol() {
+            return symbols[Math.floor(Math.random() * symbols.length)];
+        }
+
+        function calculatePayout(bet, s1, s2, s3) {
+            if (s1 === s2 && s2 === s3) {
+                if (s1 === "7️⃣") return bet * 100;
+                if (s1 === "⭐") return bet * 25;
+                if (s1 === "🔔") return bet * 10;
+                if (s1 === "🍒") return bet * 6;
+                return bet * 3;
+            }
+            return 0;
+        }
+
+        function spinGrid(bet) {
+            isSpinning = true;
+            spinButton.disabled = true;
+            message.textContent = "Spinning...";
+
+            var finalSymbols = new Array(reelCells.length);
+            var stoppedCount = 0;
+
+            reelCells.forEach(function (cell, index) {
+                cell.classList.add("spinning");
+
+                var intervalId = setInterval(function () {
+                    cell.textContent = getRandomSymbol();
+                }, 80);
+
+                var column = index % 3;
+                var stopTime = 800 + column * 250;
+
+                setTimeout(function () {
+                    clearInterval(intervalId);
+
+                    var finalSymbol = getRandomSymbol();
+                    cell.textContent = finalSymbol;
+                    finalSymbols[index] = finalSymbol;
+                    cell.classList.remove("spinning");
+                    stoppedCount++;
+
+                    if (stoppedCount === reelCells.length) {
+                        finishSpin(bet, finalSymbols[3], finalSymbols[4], finalSymbols[5]);
+                    }
+                }, stopTime);
+            });
+        }
+
+        function finishSpin(bet, s1, s2, s3) {
+            var win = calculatePayout(bet, s1, s2, s3);
+
+            if (win > 0) {
+                balance += win;
+                updateBalance();
+                message.textContent =
+                    "You won " + win + " credits!";
+            } else {
+                message.textContent =
+                    "No win this time.";
+            }
+
+            isSpinning = false;
+            spinButton.disabled = false;
+        }
+
+        spinButton.onclick = function () {
+            var bet = Number(betInput.value);
+
+            if (bet <= 0 || isNaN(bet)) {
+                message.textContent = "Bet must be greater than 0.";
+                return;
+            }
+
+            if (bet > balance) {
+                message.textContent = "Not enough balance.";
+                return;
+            }
+
+            if (isSpinning) {
+                return;
+            }
+
+            balance -= bet;
+            updateBalance();
+            spinGrid(bet);
+        };
+
+        addMoneyButton.onclick = function () {
+            balance += 100;
+            updateBalance();
+        };
+
+        updateBalance();
+    </script>
+</body>
+
+</html>
